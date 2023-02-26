@@ -1,5 +1,3 @@
-import 'dart:html';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:routemaster/routemaster.dart';
@@ -56,7 +54,7 @@ class HomePage extends ConsumerWidget {
       body: FutureBuilder<ErrorModel>(
         future: ref
             .watch(DocumentRepositoryProvider)
-            .getDocuments(ref.watch(userProvider).token),
+            .getDocumentsforHomePage(ref.watch(userProvider).token),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Loader();

@@ -1,3 +1,4 @@
+// ignore: file_names
 class ErrorModel {
   final String? error;
   final dynamic data;

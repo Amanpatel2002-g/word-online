@@ -41,7 +41,8 @@ dependencies:
   http: ^0.13.5
   shared_preferences: ^2.0.17
   routemaster: ^1.0.1
-  flutter_quill: ^6.4.2
+  flutter_quill: ^6.0.0
+  socket_io_client: ^2.0.1
 
 dev_dependencies:
   flutter_test:

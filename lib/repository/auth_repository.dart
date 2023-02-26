@@ -8,7 +8,6 @@ import 'package:wordonline/local_stroage.dart';
 import 'package:wordonline/models/user_model.dart';
 import 'package:wordonline/providers/user_provider.dart';
 
-import '../screens/home_screen.dart';
 
 final authRepositoryProvider = Provider(
     (ref) => AuthRepository(googleSignIn: GoogleSignIn(), client: Client()));

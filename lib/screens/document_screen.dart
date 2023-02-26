@@ -1,8 +1,16 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wordonline/colors.dart';
-// import 'package:wordonline/repository/document_repository.dart';
+import 'package:wordonline/common/widgets/Loader.dart';
+import 'package:wordonline/constants.dart';
+import 'package:wordonline/models/document_model.dart';
+import 'package:wordonline/providers/user_provider.dart';
+import 'package:wordonline/repository/document_repository.dart';
+import 'package:wordonline/repository/socket_repository.dart';
+
+import '../models/Error_model.dart';
 
 class DocumentScreen extends ConsumerStatefulWidget {
   final String id;
@@ -15,18 +23,78 @@ class DocumentScreen extends ConsumerStatefulWidget {
 class _DocumentScreenState extends ConsumerState<DocumentScreen> {
   TextEditingController titleController =
       TextEditingController(text: "Untitled Document");
-  final quill.QuillController _controller = quill.QuillController.basic();
+  quill.QuillController? _controller;
+  ErrorModel? errorModel;
+  SocketRepository socketRepository = SocketRepository();
+
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => initialFunctions());
+    super.initState();
+  }
 
   @override
   void dispose() {
-    // TODO: implement dispose
     super.dispose();
     titleController.dispose();
-    _controller.dispose();
+  }
+
+  void initialFunctions() {
+    socketRepository.joinRoom(widget.id);
+    fetchDocumentsData();
+
+    socketRepository.changeListner((data) => _controller?.compose(
+        quill.Delta.fromJson(data['delta']),
+        _controller?.selection ?? const TextSelection.collapsed(offset: 0),
+        quill.ChangeSource.REMOTE));
+
+    Timer.periodic(const Duration(seconds: 2), (timer) {
+      socketRepository.autoSave(<String, dynamic>{
+        'delta': _controller!.document.toDelta(),
+        'room': widget.id,
+      });
+    });
+  }
+
+  void fetchDocumentsData() async {
+    errorModel = await ref
+        .read(DocumentRepositoryProvider)
+        .getDocumentByid(id: widget.id, token: ref.watch(userProvider).token);
+    customPrint("came here at fetchDocumentData");
+    if (errorModel!.data != null) {
+      customPrint((errorModel!.data as DocumentModel).title);
+      titleController.text = (errorModel!.data as DocumentModel).title;
+      _controller = quill.QuillController(
+          document: (errorModel!.data as DocumentModel).content.isEmpty
+              ? quill.Document()
+              : quill.Document.fromJson(
+                  (errorModel!.data as DocumentModel).content),
+          selection: const TextSelection.collapsed(offset: 0));
+      setState(() {});
+    }
+    _controller!.document.changes.listen((event) {
+      // 1-> entire content
+      if (event.item3 == quill.ChangeSource.LOCAL) {
+        Map<String, dynamic> map = {'delta': event.item2, 'room': widget.id};
+        socketRepository.typing(map);
+      }
+    });
+  }
+
+  Future<void> updateTitle(WidgetRef ref, String titleparamenter) async {
+    await ref.watch(DocumentRepositoryProvider).updateDocumentTitle(
+        token: ref.watch(userProvider).token,
+        id: widget.id,
+        title: titleparamenter);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_controller == null) {
+      return const Scaffold(
+        body: Loader(),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -67,6 +135,7 @@ class _DocumentScreenState extends ConsumerState<DocumentScreen> {
                         borderSide: BorderSide(color: kblueColor)),
                     contentPadding: EdgeInsets.only(left: 10),
                   ),
+                  onSubmitted: (value) => updateTitle(ref, value),
                 ),
               ),
             ],
@@ -80,17 +149,34 @@ class _DocumentScreenState extends ConsumerState<DocumentScreen> {
           ),
         ),
       ),
-      body: Column(
-        children: [
-          quill.QuillToolbar.basic(controller: _controller),
-          Expanded(
-              child: quill.QuillEditor.basic(
-                controller: _controller,
-                readOnly: false, // true for view only mode
-              
+      body: Center(
+        child: Column(
+          children: [
+            const SizedBox(
+              height: 10,
             ),
-          )
-        ],
+            quill.QuillToolbar.basic(controller: _controller!),
+            const SizedBox(
+              height: 10,
+            ),
+            Expanded(
+              child: SizedBox(
+                width: 750,
+                child: Card(
+                  elevation: 5,
+                  color: kWhiteColor,
+                  child: Padding(
+                    padding: const EdgeInsets.all(30.0),
+                    child: quill.QuillEditor.basic(
+                      controller: _controller!,
+                      readOnly: false, // true for view only mode
+                    ),
+                  ),
+                ),
+              ),
+            )
+          ],
+        ),
       ),
     );
   }

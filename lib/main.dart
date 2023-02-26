@@ -7,6 +7,7 @@ import 'package:wordonline/routes.dart';
 
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -27,7 +28,6 @@ class _MyAppState extends ConsumerState<MyApp> {
 
   @override
   void initState() {
-// TODO: implement initState
     getUserData();
     super.initState();
   }

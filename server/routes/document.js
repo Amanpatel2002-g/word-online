@@ -37,4 +37,33 @@ documentRouter.get('/docs/me', authMiddleware, async(req, res)=>{
     }
 });
 
+documentRouter.post("/doc/title", authMiddleware, async (req, res)=>{
+    try {
+        console.log("came to /doc/title/");
+        const {id, title} = req.body;
+        let document = await documentModel.findByIdAndUpdate(id, {title});
+        res.json(document);
+        console.log("leaving the /doc/title");
+    } catch (error) {
+        console.log("error from the /docs/title \n");
+        console.log(error.message);
+        res.status(501).json({error:err.message});
+    }
+});
+
+documentRouter.get("/doc/:id", authMiddleware, async(req, res)=>{
+    try {
+        console.log("came to the /doc/:id");
+        const id = req.params.id;
+        let document = await documentModel.findById(id);
+        res.json(document);
+        console.log("leaving the /doc/:id");
+    } catch (error) {
+        console.log("error from the /docs/:id \n");
+        console.log(error.message);
+        res.status(501).json({error:err.message});
+    }
+});
+
+
 module.exports = documentRouter;

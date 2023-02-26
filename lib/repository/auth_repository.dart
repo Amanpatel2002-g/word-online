@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart';
+import 'package:routemaster/routemaster.dart';
 import 'package:wordonline/constants.dart';
 import 'package:wordonline/local_stroage.dart';
 import 'package:wordonline/models/user_model.dart';
 import 'package:wordonline/providers/user_provider.dart';
 
-import '../screens/home_screen.dart';
 
 final authRepositoryProvider = Provider(
     (ref) => AuthRepository(googleSignIn: GoogleSignIn(), client: Client()));
@@ -40,9 +40,8 @@ class AuthRepository {
             final token = userfromApi.token;
             LocalStorage.setString(tokenKey, token);
             // ignore: use_build_context_synchronously
-            Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const HomePage()),
-                (route) => true);
+            final navigator = Routemaster.of(context);
+            navigator.replace('/');
             break;
           case 401:
             print(res.body);
@@ -58,8 +57,7 @@ class AuthRepository {
       print('came here');
       final String? token = await LocalStorage.getString(tokenKey);
       if (token == null) return false;
-      var res = await _client
-          .get(Uri.parse('$host/'), headers: {
+      var res = await _client.get(Uri.parse('$host/'), headers: {
         'content-type': 'application/json; charset=UTF-8',
         tokenKey: token
       });
@@ -72,5 +70,14 @@ class AuthRepository {
       return false;
     }
     // return null;
+  }
+
+  void signOut(WidgetRef ref, BuildContext context) async {
+    final navigator = Routemaster.of(context);
+    await _googleSignIn.signOut();
+    LocalStorage.setString(tokenKey, '');
+    final user = ref.watch(userProvider);
+    ref.watch(userProvider.notifier).setUser(user.copyWith(token: ''));
+    navigator.replace('/');
   }
 }

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:routemaster/routemaster.dart';
 import 'package:wordonline/providers/user_provider.dart';
 import 'package:wordonline/repository/auth_repository.dart';
-import 'package:wordonline/screens/login_screen.dart';
+import 'package:wordonline/routes.dart';
+
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -25,29 +28,28 @@ class _MyAppState extends ConsumerState<MyApp> {
 
   @override
   void initState() {
-    // TODO: implement initState
     getUserData();
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        title: 'Flutter Demo',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
-        home: isPresent == null
-            ? const Center(
-                child: CircularProgressIndicator(),
-              )
-            : isPresent == true
-                ? Scaffold(
-                    body: Center(child: Text(ref.watch(userProvider).token)),
-                  )
-                : const LoginScreen()
-        // home: const LoginScreen(),
-        );
+    return MaterialApp.router(
+      title: 'Flutter Demo',
+  debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      routerDelegate: RoutemasterDelegate(
+        routesBuilder: (context) {
+          final user = ref.watch(userProvider);
+          if (user.token.isNotEmpty) return loggedInRoute;
+          return loggedOutRoute;
+        },
+      ),
+      routeInformationParser: const RoutemasterParser(),
+      // home: const LoginScreen(),
+    );
   }
 }
-// flutter run -d chrome --web-port 3000
+// flutter run -d chrome --web-port 58872
